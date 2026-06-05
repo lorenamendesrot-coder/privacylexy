@@ -774,13 +774,17 @@ function applyProfile(cfg) {
   setVal('pStatPostagens',   cfg.stats_postagens   || '');
   setVal('pStatMidias',      cfg.stats_midias      || '');
   setVal('pPlan1mFull',      cfg.plan_1m_full      || '');
-  setVal('pPlan1mOff',       cfg.plan_1m_off       || '');
   setVal('pPlan3mFull',      cfg.plan_3m_full      || '');
-  setVal('pPlan3mOff',       cfg.plan_3m_off       || '');
   setVal('pPlan12mFull',     cfg.plan_12m_full     || '');
-  setVal('pPlan12mOff',      cfg.plan_12m_off      || '');
-  // recalcula preços ao carregar (usa % salvo para preencher promo)
-  setTimeout(() => { syncPlan('1m','off'); syncPlan('3m','off'); syncPlan('12m','off'); }, 50);
+  // Carrega preço promocional salvo diretamente, depois calcula % a partir dele
+  setTimeout(() => {
+    if (cfg.plan_1m_price)  { setVal('pPlan1m',  cfg.plan_1m_price);  syncPlan('1m','promo');  }
+    else if (cfg.plan_1m_off)  { setVal('pPlan1mOff',  cfg.plan_1m_off);  syncPlan('1m','off');  }
+    if (cfg.plan_3m_price)  { setVal('pPlan3m',  cfg.plan_3m_price);  syncPlan('3m','promo');  }
+    else if (cfg.plan_3m_off)  { setVal('pPlan3mOff',  cfg.plan_3m_off);  syncPlan('3m','off');  }
+    if (cfg.plan_12m_price) { setVal('pPlan12m', cfg.plan_12m_price); syncPlan('12m','promo'); }
+    else if (cfg.plan_12m_off) { setVal('pPlan12mOff', cfg.plan_12m_off); syncPlan('12m','off'); }
+  }, 50);
   setVal('pBenefit1',        cfg.benefit_1         || '');
   setVal('pBenefit2',        cfg.benefit_2         || '');
   setVal('pBenefit3',        cfg.benefit_3         || '');
