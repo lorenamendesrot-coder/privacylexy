@@ -719,8 +719,13 @@ async function onLoginSuccess(session) {
 // Verifica sessão existente ao abrir o painel
 (async () => {
   const { data: { session } } = await sb.auth.getSession();
-  if (session) onLoginSuccess(session);
+  if (session) { _session = session; onLoginSuccess(session); }
 })();
+
+// Mantém _session atualizado quando o Supabase renova o token automaticamente
+sb.auth.onAuthStateChange((_event, session) => {
+  if (session) _session = session;
+});
 
 document.getElementById('passwordInput').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
 
@@ -936,9 +941,17 @@ async function saveProfile() {
   };
   // Envia tudo junto para o worker — ele separa perfil/gateway e usa env.MODEL_ID
   try {
+    // Sempre busca o token fresco — _session pode estar desatualizado após refresh
+    const { data: { session: freshSession } } = await sb.auth.getSession();
+    const accessToken = freshSession?.access_token || _session?.access_token;
+    if (!accessToken) {
+      showToast('Sessão expirada. Faça login novamente.', 'err');
+      doLogout();
+      return;
+    }
     const res = await fetch('/api/admin-profile', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + _session?.access_token },
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + accessToken },
       body: JSON.stringify({ ...payload, ...gwPayload }),
     });
     const result = await res.json();
