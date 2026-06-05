@@ -747,9 +747,15 @@ function switchTab(name) {
 // ── PROFILE ──
 async function loadProfile() {
   try {
-    const { data, error } = await sb.from('site_config').select('value').eq('key','profile').maybeSingle();
-    if (error || !data) return;
-    applyProfile(data.value);
+    // Carrega perfil e gateway_config juntos
+    const [profileRes, gwRes] = await Promise.all([
+      sb.from('site_config').select('value').eq('key', 'profile').maybeSingle(),
+      sb.from('site_config').select('value').eq('key', 'gateway_config').maybeSingle()
+    ]);
+    const profileData = profileRes.data?.value || {};
+    const gwData = gwRes.data?.value || {};
+    // Mescla gateway_config no perfil para applyProfile preencher tudo
+    applyProfile({ ...profileData, ...gwData });
   } catch(e) { /* ignora */ }
 }
 
