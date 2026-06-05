@@ -81,7 +81,8 @@ serve(async (req) => {
   }
 
   try {
-    const { amount } = await req.json();
+    const body = await req.json();
+    const { amount, model_id } = body;
     if (!amount || isNaN(parseFloat(amount))) {
       return new Response(JSON.stringify({ error: "Campo obrigatório: amount" }), {
         status: 422, headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -93,8 +94,9 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
+    const gwKey = model_id ? `gateway_config_${model_id}` : "gateway_config_default";
     const { data: row } = await sb
-      .from("site_config").select("value").eq("key", "gateway_config").maybeSingle();
+      .from("site_config").select("value").eq("key", gwKey).maybeSingle();
 
     const cfg = row?.value || {};
     const gateway = cfg.gateway || "syncpay";

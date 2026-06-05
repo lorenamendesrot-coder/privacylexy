@@ -13,11 +13,14 @@
   // ── Carrega gateway_config uma vez ──────────────────────
   function loadGwConfig() {
     if (_gwConfig) return Promise.resolve(_gwConfig);
-    return fetch(SUPABASE_URL + '/rest/v1/site_config?key=eq.gateway_config&select=value', {
-      headers: { 'apikey': SUPABASE_ANON, 'Authorization': 'Bearer ' + SUPABASE_ANON }
-    })
-      .then(function (r) { return r.ok ? r.json() : []; })
-      .then(function (rows) { _gwConfig = (rows[0] && rows[0].value) || {}; return _gwConfig; })
+    // Usa /api/admin-profile — o worker já sabe o MODEL_ID pelo env var do deploy
+    return fetch('/api/admin-profile')
+      .then(function (r) { return r.ok ? r.json() : {}; })
+      .then(function (cfg) {
+        window.MODEL_ID = cfg._model_id || window.MODEL_ID || 'default';
+        _gwConfig = cfg;
+        return _gwConfig;
+      })
       .catch(function () { return {}; });
   }
 
@@ -92,7 +95,7 @@
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(Object.assign(
-          { amount: _selectedPrice, gateway: cfg.gateway || 'syncpay', site_url: cfg.site_url || '' },
+          { amount: _selectedPrice, gateway: cfg.gateway || 'syncpay', site_url: cfg.site_url || '', model_id: window.MODEL_ID || 'default' },
           cfg // passa todas as credenciais da config (client_id, api_key, etc.)
         )),
       })

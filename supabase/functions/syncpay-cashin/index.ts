@@ -41,7 +41,7 @@ Deno.serve(async (req) => {
     return new Response(JSON.stringify({ error: "JSON inválido" }), { status: 400, headers: corsHeaders });
   }
 
-  const { amount, name, cpf, email, phone } = body;
+  const { amount, name, cpf, email, phone, model_id } = body;
   if (!amount || !name || !cpf || !email || !phone) {
     return new Response(
       JSON.stringify({ error: "Campos obrigatórios: amount, name, cpf, email, phone" }),
@@ -49,16 +49,17 @@ Deno.serve(async (req) => {
     );
   }
 
-  // Lê credenciais da site_config (não do .env)
+  // Lê credenciais da site_config por model_id
   const supabase = createClient(
     Deno.env.get("SUPABASE_URL")!,
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
   );
 
+  const gwKey = model_id ? `gateway_config_${model_id}` : "gateway_config_default";
   const { data: cfg } = await supabase
     .from("site_config")
     .select("value")
-    .eq("key", "gateway_config")
+    .eq("key", gwKey)
     .maybeSingle();
 
   const clientId     = cfg?.value?.syncpay_client_id;

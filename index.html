@@ -2662,13 +2662,13 @@ var SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS
 
 // ── CARREGA CONFIG DO PERFIL (direto do Supabase) ──
 (function () {
-  fetch(SUPABASE_URL + '/rest/v1/site_config?key=eq.profile&select=value', {
-    headers: { 'apikey': SUPABASE_ANON, 'Authorization': 'Bearer ' + SUPABASE_ANON }
-  })
+  // Carrega perfil via worker — ele sabe o MODEL_ID pelo env var do deploy
+  fetch('/api/admin-profile')
     .then(function (r) { return r.ok ? r.json() : null; })
-    .then(function (rows) {
-      var cfg = rows && rows[0] && rows[0].value;
-      if (cfg) applyConfig(cfg);
+    .then(function (cfg) {
+      if (!cfg) return;
+      window.MODEL_ID = cfg._model_id || 'default';
+      applyConfig(cfg);
     })
     .catch(function () {});
 

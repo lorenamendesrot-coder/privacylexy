@@ -747,13 +747,14 @@ async function loadVideos() {
     // Busca MODEL_ID salvo no Supabase pelo admin
     var modelId = null;
     try {
-      var cfgRes = await fetch(SUPABASE_URL + '/rest/v1/site_config?key=eq.profile&select=value', {
-        headers: { 'apikey': SUPABASE_ANON, 'Authorization': 'Bearer ' + currentUser.access_token }
-      });
-      var cfgData = await cfgRes.json();
-      if (cfgData && cfgData[0] && cfgData[0].value && cfgData[0].value.model_id) {
-        modelId = cfgData[0].value.model_id;
-      }
+      // Pega model_id via worker — ele sabe pelo env var do deploy
+      try {
+        var cfgRes = await fetch('/api/admin-profile');
+        if (cfgRes.ok) {
+          var cfgData = await cfgRes.json();
+          modelId = cfgData._model_id || cfgData.model_id || null;
+        }
+      } catch(e) { /* ignora, carrega sem filtro */ }
     } catch(e) { /* ignora, carrega sem filtro */ }
 
     var modelFilter = modelId ? '&model_id=eq.' + encodeURIComponent(modelId) : '';

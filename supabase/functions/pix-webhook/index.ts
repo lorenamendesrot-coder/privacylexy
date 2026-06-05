@@ -98,11 +98,13 @@ Deno.serve(async (req) => {
     return new Response("DB error", { status: 500 });
   }
 
-  // Pega site_url da config
+  // Pega site_url da config — tenta o model_id vindo no body do webhook (se o gateway enviar)
+  const bodyModelId = body.model_id || null;
+  const gwKey = bodyModelId ? `gateway_config_${bodyModelId}` : "gateway_config_default";
   const { data: cfg } = await supabase
     .from("site_config")
     .select("value")
-    .eq("key", "gateway_config")
+    .eq("key", gwKey)
     .maybeSingle();
 
   const siteUrl = (cfg?.value?.site_url || "").replace(/\/$/, "");
