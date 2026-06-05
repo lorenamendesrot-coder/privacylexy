@@ -226,6 +226,11 @@
             <input id="pBannerUrl" type="url" placeholder="https://cdn.exemplo.com/banner.webp" oninput="previewBanner(this.value)">
             <div class="field-hint">Deixe em branco para usar o arquivo local images/banner.webp</div>
           </div>
+          <div class="field full">
+            <label>🔑 ID do Modelo (identifica os vídeos deste site)</label>
+            <input id="pModelId" type="text" placeholder="ex: susana, lexy, julia">
+            <small style="color:#888;font-size:11px">Cada deploy deve ter um ID único. Os vídeos cadastrados ficam vinculados a este ID.</small>
+          </div>
           <div class="field">
             <label>Nome de exibição</label>
             <input id="pName" type="text" placeholder="Larissa Vitoria">
@@ -749,6 +754,7 @@ async function loadProfile() {
 }
 
 function applyProfile(cfg) {
+  setVal('pModelId',         cfg.model_id         || '');
   setVal('pAvatarUrl',       cfg.avatar_url       || '');
   setVal('pBannerUrl',       cfg.banner_url        || '');
   setVal('pName',            cfg.name              || '');
@@ -870,6 +876,7 @@ function syncPlan(plan, source) {
 
 async function saveProfile() {
   const payload = {
+    model_id:         getVal('pModelId'),
     avatar_url:       getVal('pAvatarUrl'),
     banner_url:       getVal('pBannerUrl'),
     name:             getVal('pName'),

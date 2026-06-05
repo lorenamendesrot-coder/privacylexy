@@ -466,7 +466,6 @@ a { color: inherit; text-decoration: none; }
 <script>
   window.SUPABASE_URL  = 'https://ackovomkgkmjfhoidwti.supabase.co';
   window.SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFja292b21rZ2ttamZob2lkd3RpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwMDE5ODQsImV4cCI6MjA5NTU3Nzk4NH0.ofFVhY0Q7xHiekYZUiPHiDANbR8Q8W4W4RP-y9DTg0g';
-  window.MODEL_ID = 'susana'; // ← troque pelo nome da modelo deste deploy
 </script>
 </head>
 <body>
@@ -745,7 +744,19 @@ function showMembers() {
 // ── VÍDEOS ────────────────────────────────────────────────────
 async function loadVideos() {
   try {
-    var modelFilter = window.MODEL_ID ? '&model_id=eq.' + encodeURIComponent(window.MODEL_ID) : '';
+    // Busca MODEL_ID salvo no Supabase pelo admin
+    var modelId = null;
+    try {
+      var cfgRes = await fetch(SUPABASE_URL + '/rest/v1/site_config?key=eq.profile&select=value', {
+        headers: { 'apikey': SUPABASE_ANON, 'Authorization': 'Bearer ' + currentUser.access_token }
+      });
+      var cfgData = await cfgRes.json();
+      if (cfgData && cfgData[0] && cfgData[0].value && cfgData[0].value.model_id) {
+        modelId = cfgData[0].value.model_id;
+      }
+    } catch(e) { /* ignora, carrega sem filtro */ }
+
+    var modelFilter = modelId ? '&model_id=eq.' + encodeURIComponent(modelId) : '';
     var res = await fetch(SUPABASE_URL + '/rest/v1/medias?type=neq.photo&order=created_at.desc' + modelFilter, {
       headers: {
         'apikey': SUPABASE_ANON,
