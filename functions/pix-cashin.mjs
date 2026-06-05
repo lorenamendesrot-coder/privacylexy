@@ -33,15 +33,23 @@ const GATEWAYS = {
     label: "NexusPag",
     requiredFields: ["nexuspag_api_key"],
     async cashin(cfg, amount, webhookUrl) {
-      const payload = { amount: Math.round(parseFloat(amount) * 100), description: "Acesso ao conteúdo" };
+      // Base URL: https://nexuspag.com — amount em reais (float)
+      const payload = {
+        amount: parseFloat((parseFloat(amount) / 100).toFixed(2)), // converte centavos → reais
+        description: "Acesso ao conteúdo",
+      };
       if (webhookUrl) payload.webhook_url = webhookUrl;
-      const res = await fetch("https://api.nexuspag.com.br/v1/pix/cashin", {
-        method: "POST", headers: { "Content-Type": "application/json", "x-api-key": cfg.nexuspag_api_key },
+      const res = await fetch("https://nexuspag.com/api/pix/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-api-key": cfg.nexuspag_api_key },
         body: JSON.stringify(payload),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.message || "Erro NexusPag");
-      return { pix_code: data.pix_code || data.qr_code || data.payload, identifier: data.id || data.txid };
+      if (!res.ok) throw new Error(data.message || data.error || JSON.stringify(data));
+      return {
+        pix_code: data.pix_code || data.qr_code || data.payload || data.brcode || data.copy_paste,
+        identifier: data.id || data.txid || data.external_id,
+      };
     },
   },
   asaas: {
