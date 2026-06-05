@@ -6,7 +6,6 @@ const HEADERS = {
   "Access-Control-Allow-Origin": "*",
 };
 
-// Campos que vão para gateway_config, o resto vai para profile
 const GW_FIELDS = new Set([
   "site_url","gateway",
   "syncpay_client_id","syncpay_client_secret",
@@ -16,93 +15,101 @@ const GW_FIELDS = new Set([
   "primepag_client_id","primepag_client_secret",
 ]);
 
+function err(msg, status = 500) {
+  return new Response(JSON.stringify({ error: msg }), { status, headers: HEADERS });
+}
+
 export async function onRequest({ request, env }) {
-  // MODEL_ID vem exclusivamente do env var do deploy (Cloudflare/Netlify)
-  const modelId    = (env.MODEL_ID || "default").trim();
-  const profileKey = `profile_${modelId}`;
-  const gwKey      = `gateway_config_${modelId}`;
+  try {
+    // Diagnóstico: valida env vars obrigatórias
+    if (!env.SUPABASE_URL)      return err("env SUPABASE_URL não definida");
+    if (!env.SUPABASE_SERVICE_KEY) return err("env SUPABASE_SERVICE_KEY não definida");
 
-  const supabase = createClient(env.SUPABASE_URL, env.SUPABASE_SERVICE_KEY);
+    const modelId    = (env.MODEL_ID || "default").trim();
+    const profileKey = `profile_${modelId}`;
+    const gwKey      = `gateway_config_${modelId}`;
 
-  if (request.method === "OPTIONS") {
-    return new Response(null, { status: 204, headers: HEADERS });
-  }
+    const supabase = createClient(env.SUPABASE_URL, env.SUPABASE_SERVICE_KEY);
 
-  // ── GET: leitura pública — devolve perfil + gateway fundidos ────────────────
-  if (request.method === "GET") {
-    const [profileRow, gwRow] = await Promise.all([
-      supabase.from("site_config").select("value").eq("key", profileKey).maybeSingle(),
-      supabase.from("site_config").select("value").eq("key", gwKey).maybeSingle(),
-    ]);
+    if (request.method === "OPTIONS") {
+      return new Response(null, { status: 204, headers: HEADERS });
+    }
 
-    const profile = profileRow.data?.value || {};
-    const gw      = gwRow.data?.value     || {};
+    // ── GET ─────────────────────────────────────────────────────────────────
+    if (request.method === "GET") {
+      const [profileRow, gwRow] = await Promise.all([
+        supabase.from("site_config").select("value").eq("key", profileKey).maybeSingle(),
+        supabase.from("site_config").select("value").eq("key", gwKey).maybeSingle(),
+      ]);
 
+      if (profileRow.error) return err("Supabase GET profile error: " + JSON.stringify(profileRow.error));
+      if (gwRow.error)      return err("Supabase GET gw error: "      + JSON.stringify(gwRow.error));
+
+      const profile = profileRow.data?.value || {};
+      const gw      = gwRow.data?.value     || {};
+
+      return new Response(
+        JSON.stringify({ ...profile, ...gw, _model_id: modelId }),
+        { status: 200, headers: HEADERS }
+      );
+    }
+
+    // ── POST ─────────────────────────────────────────────────────────────────
+    if (request.method === "POST") {
+      const authHeader = request.headers.get("Authorization") || "";
+      const jwt = authHeader.replace("Bearer ", "").trim();
+
+      if (!jwt) return err("Não autorizado — token ausente", 401);
+
+      // Valida JWT via REST do Supabase
+      const authRes = await fetch(`${env.SUPABASE_URL}/auth/v1/user`, {
+        headers: {
+          "apikey": env.SUPABASE_SERVICE_KEY,
+          "Authorization": `Bearer ${jwt}`,
+        },
+      });
+      if (!authRes.ok) {
+        const authErr = await authRes.json().catch(() => ({}));
+        return err("Sessão inválida: " + JSON.stringify(authErr), 401);
+      }
+      const authUser = await authRes.json().catch(() => null);
+      if (!authUser?.id) return err("Sessão inválida — sem user.id", 401);
+
+      let body;
+      try { body = await request.json(); }
+      catch { return err("JSON inválido no body", 400); }
+
+      const gwPayload      = {};
+      const profilePayload = {};
+      for (const [k, v] of Object.entries(body)) {
+        if (k === "_model_id") continue;
+        if (GW_FIELDS.has(k)) gwPayload[k] = v;
+        else profilePayload[k] = v;
+      }
+      profilePayload.model_id = modelId;
+
+      const [gwRes, profileRes] = await Promise.all([
+        supabase.from("site_config").upsert({ key: gwKey,      value: gwPayload      }, { onConflict: "key" }),
+        supabase.from("site_config").upsert({ key: profileKey, value: profilePayload }, { onConflict: "key" }),
+      ]);
+
+      if (gwRes.error || profileRes.error) {
+        return err({
+          gw_error:      gwRes.error      ? JSON.stringify(gwRes.error)      : null,
+          profile_error: profileRes.error ? JSON.stringify(profileRes.error) : null,
+        });
+      }
+
+      return new Response(JSON.stringify({ ok: true, model_id: modelId }), { status: 200, headers: HEADERS });
+    }
+
+    return new Response("Method Not Allowed", { status: 405 });
+
+  } catch (e) {
+    // Captura qualquer exceção inesperada e retorna o stack no body
     return new Response(
-      JSON.stringify({ ...profile, ...gw, _model_id: modelId }),
-      { status: 200, headers: HEADERS }
+      JSON.stringify({ error: "Exceção inesperada", detail: String(e), stack: e?.stack }),
+      { status: 500, headers: HEADERS }
     );
   }
-
-  // ── POST: salva — requer JWT de sessão Supabase válida ─────────────────────
-  if (request.method === "POST") {
-    const authHeader = request.headers.get("Authorization") || "";
-    const jwt = authHeader.replace("Bearer ", "").trim();
-
-    if (!jwt) {
-      return new Response(JSON.stringify({ error: "Não autorizado" }), { status: 401, headers: HEADERS });
-    }
-
-    // Valida o JWT chamando a API REST do Supabase diretamente
-    // (o cliente local lib/supabase.js não tem auth SDK)
-    const authRes = await fetch(`${env.SUPABASE_URL}/auth/v1/user`, {
-      headers: {
-        "apikey": env.SUPABASE_SERVICE_KEY,
-        "Authorization": `Bearer ${jwt}`,
-      },
-    });
-    if (!authRes.ok) {
-      const authErr = await authRes.json().catch(() => ({}));
-      console.error("Auth error:", authRes.status, JSON.stringify(authErr));
-      return new Response(JSON.stringify({ error: "Sessão inválida" }), { status: 401, headers: HEADERS });
-    }
-    const authUser = await authRes.json().catch(() => null);
-    if (!authUser?.id) {
-      return new Response(JSON.stringify({ error: "Sessão inválida" }), { status: 401, headers: HEADERS });
-    }
-
-    let body;
-    try { body = await request.json(); } catch {
-      return new Response('{"error":"JSON inválido"}', { status: 400, headers: HEADERS });
-    }
-
-    // Separa campos de gateway dos campos de perfil
-    const gwPayload      = {};
-    const profilePayload = {};
-    for (const [k, v] of Object.entries(body)) {
-      if (k === "_model_id") continue; // campo interno, não persiste
-      if (GW_FIELDS.has(k)) gwPayload[k] = v;
-      else profilePayload[k] = v;
-    }
-    profilePayload.model_id = modelId; // garante model_id no registro de perfil
-
-    const [gwRes, profileRes] = await Promise.all([
-      supabase.from("site_config").upsert({ key: gwKey,      value: gwPayload      }, { onConflict: "key" }),
-      supabase.from("site_config").upsert({ key: profileKey, value: profilePayload }, { onConflict: "key" }),
-    ]);
-
-    const err = gwRes.error || profileRes.error;
-    if (err) {
-      const errDetail = {
-        gw_error: gwRes.error ? JSON.stringify(gwRes.error) : null,
-        profile_error: profileRes.error ? JSON.stringify(profileRes.error) : null,
-      };
-      console.error("Supabase write error:", JSON.stringify(errDetail));
-      return new Response(JSON.stringify({ error: errDetail }), { status: 500, headers: HEADERS });
-    }
-
-    return new Response(JSON.stringify({ ok: true, model_id: modelId }), { status: 200, headers: HEADERS });
-  }
-
-  return new Response("Method Not Allowed", { status: 405 });
 }
