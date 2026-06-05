@@ -1,8 +1,12 @@
 # netlify.toml — configuração do deploy Netlify
 
 [build]
-  publish = "."
+  publish   = "."
   functions = "netlify/functions"
+
+# SUPABASE_URL aparece nos HTMLs propositalmente (é a URL pública do projeto)
+[context.production]
+  SECRETS_SCAN_OMIT_KEYS = "SUPABASE_URL"
 
 # Todas as rotas /api/* vão para as Netlify Functions
 [[redirects]]
