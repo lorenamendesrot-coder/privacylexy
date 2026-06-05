@@ -111,7 +111,7 @@ export async function handler(req) {
     const result = await gateway.cashin(cfg, amount, webhookUrl);
     return new Response(JSON.stringify({ ok: true, ...result }), { status: 200, headers: CORS });
   } catch (err) {
-    return new Response(JSON.stringify({ error: err.message }), { status: 500, headers: CORS });
+    return new Response(JSON.stringify({ error: err.message, stack: err.stack, cause: String(err.cause || '') }), { status: 500, headers: CORS });
   }
 }
 
