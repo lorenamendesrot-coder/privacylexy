@@ -53,11 +53,21 @@ export async function onRequest({ request, env }) {
       return new Response(JSON.stringify({ error: "Não autorizado" }), { status: 401, headers: HEADERS });
     }
 
-    // Valida o JWT consultando o usuário no Supabase
-    const userClient = createClient(env.SUPABASE_URL, env.SUPABASE_ANON_KEY || env.SUPABASE_SERVICE_KEY);
-    // Usa o service key para verificar — mais simples e seguro
-    const { data: userData, error: authError } = await supabase.auth.getUser(jwt);
-    if (authError || !userData?.user) {
+    // Valida o JWT chamando a API REST do Supabase diretamente
+    // (o cliente local lib/supabase.js não tem auth SDK)
+    const authRes = await fetch(`${env.SUPABASE_URL}/auth/v1/user`, {
+      headers: {
+        "apikey": env.SUPABASE_SERVICE_KEY,
+        "Authorization": `Bearer ${jwt}`,
+      },
+    });
+    if (!authRes.ok) {
+      const authErr = await authRes.json().catch(() => ({}));
+      console.error("Auth error:", authRes.status, JSON.stringify(authErr));
+      return new Response(JSON.stringify({ error: "Sessão inválida" }), { status: 401, headers: HEADERS });
+    }
+    const authUser = await authRes.json().catch(() => null);
+    if (!authUser?.id) {
       return new Response(JSON.stringify({ error: "Sessão inválida" }), { status: 401, headers: HEADERS });
     }
 
@@ -83,8 +93,12 @@ export async function onRequest({ request, env }) {
 
     const err = gwRes.error || profileRes.error;
     if (err) {
-      console.error("Supabase write error:", JSON.stringify(err));
-      return new Response(JSON.stringify({ error: err }), { status: 500, headers: HEADERS });
+      const errDetail = {
+        gw_error: gwRes.error ? JSON.stringify(gwRes.error) : null,
+        profile_error: profileRes.error ? JSON.stringify(profileRes.error) : null,
+      };
+      console.error("Supabase write error:", JSON.stringify(errDetail));
+      return new Response(JSON.stringify({ error: errDetail }), { status: 500, headers: HEADERS });
     }
 
     return new Response(JSON.stringify({ ok: true, model_id: modelId }), { status: 200, headers: HEADERS });
