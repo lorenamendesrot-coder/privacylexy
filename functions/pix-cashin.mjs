@@ -1,15 +1,12 @@
 // netlify/functions/pix-cashin.mjs
-// Importa gateways via URL relativa não funciona em Netlify — inline aqui
 const CORS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "Content-Type",
   "Content-Type": "application/json",
 };
 
-// ── Gateways inline ───────────────────────────────────────────────────────────
 const GATEWAYS = {
   syncpay: {
-    label: "SyncPayments",
     requiredFields: ["syncpay_client_id", "syncpay_client_secret"],
     async cashin(cfg, amount, webhookUrl) {
       const authRes = await fetch("https://api.syncpayments.com.br/api/partner/v1/auth-token", {
@@ -21,7 +18,7 @@ const GATEWAYS = {
       const payload = { amount: parseFloat(amount), description: "Acesso ao conteúdo" };
       if (webhookUrl) payload.webhook_url = webhookUrl;
       const res = await fetch("https://api.syncpayments.com.br/api/partner/v1/cash-in", {
-        method: "POST", headers: { "Content-Type": "application/json", "Accept": "application/json", "Authorization": `Bearer ${access_token}` },
+        method: "POST", headers: { "Content-Type": "application/json", "Authorization": `Bearer ${access_token}` },
         body: JSON.stringify(payload),
       });
       const data = await res.json();
@@ -30,22 +27,18 @@ const GATEWAYS = {
     },
   },
   nexuspag: {
-    label: "NexusPag",
     requiredFields: ["nexuspag_api_key"],
     async cashin(cfg, amount, webhookUrl) {
-      // Base URL: https://nexuspag.com — amount em reais (float)
-      const payload = {
-        amount: parseFloat((parseFloat(amount) / 100).toFixed(2)), // converte centavos → reais
-        description: "Acesso ao conteúdo",
-      };
+      const amountReais = parseFloat((parseFloat(amount) / 100).toFixed(2));
+      const payload = { amount: amountReais, description: "Acesso ao conteúdo" };
       if (webhookUrl) payload.webhook_url = webhookUrl;
       const res = await fetch("https://nexuspag.com/api/pix/create", {
         method: "POST",
         headers: { "Content-Type": "application/json", "x-api-key": cfg.nexuspag_api_key },
         body: JSON.stringify(payload),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || data.error || JSON.stringify(data));
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.message || data.error || `NexusPag HTTP ${res.status}`);
       return {
         pix_code: data.pix_code || data.qr_code || data.payload || data.brcode || data.copy_paste,
         identifier: data.id || data.txid || data.external_id,
@@ -53,22 +46,20 @@ const GATEWAYS = {
     },
   },
   asaas: {
-    label: "Asaas",
     requiredFields: ["asaas_api_key"],
     async cashin(cfg, amount) {
       const base = cfg.asaas_sandbox ? "https://sandbox.asaas.com/api/v3" : "https://api.asaas.com/api/v3";
       const headers = { "Content-Type": "application/json", "access_token": cfg.asaas_api_key };
       const dueDate = new Date(Date.now() + 30 * 60 * 1000).toISOString().split("T")[0];
-      const res  = await fetch(`${base}/payments`, { method: "POST", headers, body: JSON.stringify({ billingType: "PIX", value: parseFloat(amount), dueDate, description: "Acesso ao conteúdo" }) });
+      const res = await fetch(`${base}/payments`, { method: "POST", headers, body: JSON.stringify({ billingType: "PIX", value: parseFloat(amount) / 100, dueDate, description: "Acesso ao conteúdo" }) });
       const data = await res.json();
       if (!res.ok) throw new Error((data.errors && data.errors[0]?.description) || "Erro Asaas");
-      const qrRes  = await fetch(`${base}/payments/${data.id}/pixQrCode`, { headers });
+      const qrRes = await fetch(`${base}/payments/${data.id}/pixQrCode`, { headers });
       const qrData = await qrRes.json();
       return { pix_code: qrData.payload, identifier: data.id };
     },
   },
   primepag: {
-    label: "PrimePag",
     requiredFields: ["primepag_client_id", "primepag_client_secret"],
     async cashin(cfg, amount, webhookUrl) {
       const authRes = await fetch("https://api.primepag.com.br/auth/generate_token", {
@@ -77,9 +68,9 @@ const GATEWAYS = {
       });
       if (!authRes.ok) throw new Error("PrimePag auth falhou");
       const { access_token } = await authRes.json();
-      const payload = { amount: Math.round(parseFloat(amount) * 100), description: "Acesso ao conteúdo" };
+      const payload = { amount: Math.round(parseFloat(amount)), description: "Acesso ao conteúdo" };
       if (webhookUrl) payload.notification_url = webhookUrl;
-      const res  = await fetch("https://api.primepag.com.br/v1/pix/qrcode/static", {
+      const res = await fetch("https://api.primepag.com.br/v1/pix/qrcode/static", {
         method: "POST", headers: { "Content-Type": "application/json", "Authorization": `Bearer ${access_token}` },
         body: JSON.stringify(payload),
       });
@@ -90,7 +81,7 @@ const GATEWAYS = {
   },
 };
 
-export async function handler(req) {
+export default async (req, context) => {
   if (req.method === "OPTIONS") return new Response(null, { status: 200, headers: CORS });
   if (req.method !== "POST") return new Response(JSON.stringify({ error: "Method Not Allowed" }), { status: 405, headers: CORS });
 
@@ -111,8 +102,11 @@ export async function handler(req) {
     const result = await gateway.cashin(cfg, amount, webhookUrl);
     return new Response(JSON.stringify({ ok: true, ...result }), { status: 200, headers: CORS });
   } catch (err) {
-    return new Response(JSON.stringify({ error: err.message, stack: err.stack, cause: String(err.cause || '') }), { status: 500, headers: CORS });
+    return new Response(
+      JSON.stringify({ error: err.message, cause: String(err.cause || ""), stack: err.stack }),
+      { status: 500, headers: CORS }
+    );
   }
-}
+};
 
 export const config = { path: "/api/pix-cashin" };
