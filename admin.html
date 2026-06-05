@@ -934,6 +934,7 @@ async function saveProfile() {
     if (dbError) {
       showToast('Erro ao salvar: ' + dbError.message, 'err');
     } else {
+      CURRENT_MODEL_ID = null; // reseta cache ao salvar perfil
       showToast('Perfil salvo com sucesso! ✓', 'ok');
     }
   } catch(e) {
@@ -961,12 +962,27 @@ function previewBanner(url) {
   tmp.src = url;
 }
 
+// ── MODEL ID ──
+var CURRENT_MODEL_ID = null;
+
+async function getModelId() {
+  if (CURRENT_MODEL_ID) return CURRENT_MODEL_ID;
+  try {
+    const { data } = await sb.from('site_config').select('value').eq('key', 'profile').maybeSingle();
+    CURRENT_MODEL_ID = data?.value?.model_id || null;
+  } catch(e) {}
+  return CURRENT_MODEL_ID;
+}
+
 // ── LOAD MEDIAS ──
 async function loadMedias() {
   const list = document.getElementById('mediaList');
   if (list) list.innerHTML = '<div class="empty">Carregando...</div>';
   try {
-    const { data: mediaData, error: mediaErr } = await sb.from('medias').select('*').order('created_at', { ascending: false });
+    const modelId = await getModelId();
+    let query = sb.from('medias').select('*').order('created_at', { ascending: false });
+    if (modelId) query = query.eq('model_id', modelId);
+    const { data: mediaData, error: mediaErr } = await query;
     if (mediaErr) throw mediaErr;
     MEDIAS = mediaData || [];
     document.getElementById('countBadge').textContent = MEDIAS.length;
@@ -1264,6 +1280,8 @@ function detectType(url) {
 
 async function postMedia(payload) {
   try {
+    const modelId = await getModelId();
+    if (modelId) payload.model_id = modelId;
     const { data, error } = await sb.from('medias').insert(payload).select().single();
     if (error) { console.error(error); return false; }
     return !!data?.id;
@@ -1276,7 +1294,10 @@ async function deleteMedia(id) {
   const row = document.getElementById('row-' + id);
   if (row) row.style.opacity = '0.4';
   try {
-    const { error } = await sb.from('medias').delete().eq('id', id);
+    const modelId = await getModelId();
+    let delQuery = sb.from('medias').delete().eq('id', id);
+    if (modelId) delQuery = delQuery.eq('model_id', modelId);
+    const { error } = await delQuery;
     if (!error) { showToast('Removida ✓', 'ok'); await loadMedias(); }
     else { showToast('Erro ao remover: ' + error.message, 'err'); if (row) row.style.opacity = '1'; }
   } catch { showToast('Erro de conexão', 'err'); if (row) row.style.opacity = '1'; }
