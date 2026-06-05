@@ -5,7 +5,7 @@
   functions = "netlify/functions"
 
 # SUPABASE_URL aparece nos HTMLs propositalmente (é a URL pública do projeto)
-[context.production]
+[build.environment]
   SECRETS_SCAN_OMIT_KEYS = "SUPABASE_URL"
 
 # Todas as rotas /api/* vão para as Netlify Functions
@@ -49,7 +49,7 @@
   to   = "/.netlify/functions/syncpay-cashin"
   status = 200
 
-# SPA fallback — serve index.html para qualquer rota não encontrada
+# SPA fallback
 [[redirects]]
   from   = "/*"
   to     = "/index.html"
