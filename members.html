@@ -1,0 +1,841 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Área de Membros</title>
+<link rel="icon" href="images/faviconV2.png" type="image/png">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Serif+Display:ital@0;1&display=swap');
+
+:root {
+  --bg: #0a0a0a;
+  --surface: #141414;
+  --surface2: #1e1e1e;
+  --border: rgba(255,255,255,0.08);
+  --text: #f0f0f0;
+  --text-dim: #888;
+  --accent: rgb(246,132,44);
+  --accent2: #ffbfa3;
+  --radius: 16px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'DM Sans', system-ui, sans-serif;
+  min-height: 100vh;
+}
+
+a { color: inherit; text-decoration: none; }
+
+/* ── TOPBAR ───────────────────────── */
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: rgba(10,10,10,0.85);
+  backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--border);
+  height: 60px;
+  display: flex;
+  align-items: center;
+  padding: 0 24px;
+  justify-content: space-between;
+}
+.topbar-logo {
+  font-family: 'DM Serif Display', serif;
+  font-size: 22px;
+  color: var(--accent);
+  letter-spacing: -0.5px;
+}
+.topbar-user {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  color: var(--text-dim);
+}
+.topbar-user span { max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.btn-logout {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  font-size: 12px;
+  padding: 6px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all .2s;
+}
+.btn-logout:hover { color: var(--text); border-color: rgba(255,255,255,0.2); }
+
+/* ── AUTH SCREEN ──────────────────── */
+#authScreen {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: calc(100vh - 60px);
+  padding: 24px;
+}
+.auth-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  padding: 40px 36px;
+  width: 100%;
+  max-width: 400px;
+}
+.auth-title {
+  font-family: 'DM Serif Display', serif;
+  font-size: 28px;
+  color: var(--text);
+  margin-bottom: 6px;
+}
+.auth-subtitle {
+  font-size: 14px;
+  color: var(--text-dim);
+  margin-bottom: 28px;
+  line-height: 1.5;
+}
+.auth-tabs {
+  display: flex;
+  background: var(--surface2);
+  border-radius: 10px;
+  padding: 3px;
+  margin-bottom: 24px;
+}
+.auth-tab {
+  flex: 1;
+  text-align: center;
+  padding: 8px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  color: var(--text-dim);
+  transition: all .2s;
+  font-family: inherit;
+  background: none;
+  border: none;
+}
+.auth-tab.active {
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: 0 1px 6px rgba(0,0,0,0.4);
+}
+.field {
+  margin-bottom: 14px;
+}
+.field label {
+  display: block;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-dim);
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+}
+.field input {
+  width: 100%;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 14px;
+  color: var(--text);
+  font-size: 14px;
+  font-family: inherit;
+  outline: none;
+  transition: border-color .2s;
+}
+.field input:focus { border-color: var(--accent); }
+.field input::placeholder { color: #555; }
+
+.btn-primary {
+  width: 100%;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  padding: 14px;
+  font-size: 15px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  margin-top: 6px;
+  transition: opacity .2s, transform .1s;
+}
+.btn-primary:hover { opacity: .9; }
+.btn-primary:active { transform: scale(.98); }
+.btn-primary:disabled { opacity: .5; cursor: default; }
+
+.auth-msg {
+  margin-top: 14px;
+  font-size: 13px;
+  text-align: center;
+  color: var(--text-dim);
+  min-height: 20px;
+}
+.auth-msg.error { color: #ff6b6b; }
+.auth-msg.success { color: #4caf7d; }
+
+.token-hint {
+  margin-top: 18px;
+  padding: 12px 14px;
+  background: rgba(246,132,44,0.08);
+  border: 1px solid rgba(246,132,44,0.2);
+  border-radius: 10px;
+  font-size: 12px;
+  color: var(--accent2);
+  line-height: 1.5;
+  text-align: center;
+}
+
+/* ── MEMBERS SCREEN ───────────────── */
+#membersScreen { display: none; }
+
+.hero-banner {
+  background: linear-gradient(135deg, #1a0a00 0%, #0a0a0a 60%);
+  border-bottom: 1px solid var(--border);
+  padding: 32px 24px 28px;
+  text-align: center;
+}
+.hero-welcome {
+  font-size: 13px;
+  color: var(--text-dim);
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+}
+.hero-title {
+  font-family: 'DM Serif Display', serif;
+  font-size: 32px;
+  color: var(--text);
+  margin-bottom: 6px;
+}
+.hero-title em { color: var(--accent); font-style: italic; }
+.hero-sub {
+  font-size: 14px;
+  color: var(--text-dim);
+}
+
+.section {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 32px 20px;
+}
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+.section-title {
+  font-family: 'DM Serif Display', serif;
+  font-size: 22px;
+  color: var(--text);
+}
+.section-count {
+  font-size: 12px;
+  color: var(--text-dim);
+  background: var(--surface2);
+  padding: 4px 10px;
+  border-radius: 20px;
+}
+
+/* ── VIDEO GRID ───────────────────── */
+.video-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 16px;
+}
+
+.video-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  cursor: pointer;
+  transition: transform .2s, box-shadow .2s, border-color .2s;
+}
+.video-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 40px rgba(0,0,0,0.5);
+  border-color: rgba(246,132,44,0.25);
+}
+
+.video-thumb {
+  aspect-ratio: 16/9;
+  background: var(--surface2);
+  position: relative;
+  overflow: hidden;
+}
+.video-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform .3s;
+}
+.video-card:hover .video-thumb img { transform: scale(1.04); }
+
+.video-thumb-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #1a1a1a, #111);
+}
+.video-thumb-placeholder svg { opacity: .25; }
+
+.play-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0,0,0,0);
+  transition: background .2s;
+}
+.video-card:hover .play-overlay { background: rgba(0,0,0,0.3); }
+.play-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: rgba(246,132,44,0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transform: scale(.8);
+  transition: all .2s;
+}
+.video-card:hover .play-btn { opacity: 1; transform: scale(1); }
+
+.video-type-badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: rgba(0,0,0,0.7);
+  backdrop-filter: blur(4px);
+  border-radius: 6px;
+  padding: 3px 8px;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  color: var(--accent2);
+}
+
+.video-info {
+  padding: 12px 14px;
+}
+.video-title {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 4px;
+}
+.video-meta {
+  font-size: 11px;
+  color: var(--text-dim);
+}
+.video-desc {
+  font-size: 12px;
+  color: var(--text-dim);
+  margin-top: 3px;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  line-height: 1.4;
+}
+
+/* ── VIDEO MODAL ──────────────────── */
+#videoModal {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 999;
+  background: rgba(0,0,0,0.92);
+  backdrop-filter: blur(8px);
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+#videoModal.open { display: flex; }
+
+.video-modal-inner {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  overflow: hidden;
+  width: 100%;
+  max-width: 860px;
+  position: relative;
+}
+.modal-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 36px;
+  height: 36px;
+  background: rgba(0,0,0,0.6);
+  border: none;
+  border-radius: 50%;
+  color: #fff;
+  font-size: 18px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  transition: background .2s;
+}
+.modal-close:hover { background: rgba(246,132,44,0.8); }
+
+.modal-video-wrap {
+  aspect-ratio: 16/9;
+  background: #000;
+}
+.modal-video-wrap video,
+.modal-video-wrap iframe {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.modal-info {
+  padding: 16px 20px;
+}
+.modal-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+/* ── LOADING ──────────────────────── */
+.loading-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 16px;
+}
+.skeleton {
+  background: var(--surface);
+  border-radius: var(--radius);
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+.skeleton-thumb {
+  aspect-ratio: 16/9;
+  background: linear-gradient(90deg, var(--surface2) 25%, #252525 50%, var(--surface2) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s infinite;
+}
+.skeleton-info { padding: 12px 14px; }
+.skeleton-line {
+  height: 12px;
+  border-radius: 6px;
+  background: linear-gradient(90deg, var(--surface2) 25%, #252525 50%, var(--surface2) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s infinite;
+  margin-bottom: 8px;
+}
+.skeleton-line.short { width: 60%; }
+@keyframes shimmer { to { background-position: -200% 0; } }
+
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--text-dim);
+}
+.empty-state svg { margin: 0 auto 16px; opacity: .3; }
+.empty-state p { font-size: 14px; }
+
+/* ── RESPONSIVE ───────────────────── */
+@media (max-width: 600px) {
+  .auth-card { padding: 28px 20px; }
+  .hero-title { font-size: 26px; }
+  .video-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+}
+</style>
+<script>
+  window.SUPABASE_URL  = 'https://ackovomkgkmjfhoidwti.supabase.co';
+  window.SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFja292b21rZ2ttamZob2lkd3RpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwMDE5ODQsImV4cCI6MjA5NTU3Nzk4NH0.ofFVhY0Q7xHiekYZUiPHiDANbR8Q8W4W4RP-y9DTg0g';
+  window.MODEL_ID = 'susana'; // ← troque pelo nome da modelo deste deploy
+</script>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<header class="topbar">
+  <div class="topbar-logo">privacy</div>
+  <div class="topbar-user" id="topbarUser" style="display:none">
+    <span id="topbarEmail"></span>
+    <button class="btn-logout" onclick="logout()">Sair</button>
+  </div>
+</header>
+
+<!-- AUTH SCREEN -->
+<div id="authScreen">
+  <div class="auth-card">
+    <div class="auth-title">Área de Membros</div>
+    <div class="auth-subtitle">Acesse seu conteúdo exclusivo</div>
+
+    <div class="auth-tabs">
+      <button class="auth-tab active" id="tabLogin" onclick="switchTab('login')">Entrar</button>
+      <button class="auth-tab" id="tabRegister" onclick="switchTab('register')">Criar conta</button>
+    </div>
+
+    <!-- LOGIN -->
+    <div id="formLogin">
+      <div class="field">
+        <label>E-mail</label>
+        <input type="email" id="loginEmail" placeholder="seu@email.com" autocomplete="email">
+      </div>
+      <div class="field">
+        <label>Senha</label>
+        <input type="password" id="loginPassword" placeholder="••••••••" autocomplete="current-password">
+      </div>
+      <button class="btn-primary" onclick="doLogin()">Entrar</button>
+    </div>
+
+    <!-- REGISTER -->
+    <div id="formRegister" style="display:none">
+      <div class="field">
+        <label>E-mail</label>
+        <input type="email" id="regEmail" placeholder="seu@email.com" autocomplete="email">
+      </div>
+      <div class="field">
+        <label>Senha</label>
+        <input type="password" id="regPassword" placeholder="Mínimo 6 caracteres" autocomplete="new-password">
+      </div>
+      <div class="field">
+        <label>Confirmar senha</label>
+        <input type="password" id="regPassword2" placeholder="Repita a senha">
+      </div>
+      <button class="btn-primary" onclick="doRegister()">Criar conta</button>
+      <div class="token-hint" id="tokenHint" style="display:none">
+        🔑 Token de acesso detectado! Sua conta será vinculada ao pagamento automaticamente.
+      </div>
+    </div>
+
+    <div class="auth-msg" id="authMsg"></div>
+  </div>
+</div>
+
+<!-- MEMBERS SCREEN -->
+<div id="membersScreen">
+  <div class="hero-banner">
+    <div class="hero-welcome">Bem-vindo ao Meu Mundo</div>
+    <div class="hero-title">Seu conteúdo <em>Exclusivo</em></div>
+    <div class="hero-sub">Todo o conteúdo exclusivo liberado para você</div>
+  </div>
+
+  <div class="section">
+    <div class="section-header">
+      <div class="section-title">Vídeos</div>
+      <div class="section-count" id="videoCount">...</div>
+    </div>
+    <div id="videoGrid" class="loading-grid">
+      <!-- skeletons -->
+      <div class="skeleton"><div class="skeleton-thumb"></div><div class="skeleton-info"><div class="skeleton-line"></div><div class="skeleton-line short"></div></div></div>
+      <div class="skeleton"><div class="skeleton-thumb"></div><div class="skeleton-info"><div class="skeleton-line"></div><div class="skeleton-line short"></div></div></div>
+      <div class="skeleton"><div class="skeleton-thumb"></div><div class="skeleton-info"><div class="skeleton-line"></div><div class="skeleton-line short"></div></div></div>
+      <div class="skeleton"><div class="skeleton-thumb"></div><div class="skeleton-info"><div class="skeleton-line"></div><div class="skeleton-line short"></div></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- VIDEO MODAL -->
+<div id="videoModal">
+  <div class="video-modal-inner">
+    <button class="modal-close" onclick="closeVideo()">✕</button>
+    <div class="modal-video-wrap" id="modalVideoWrap"></div>
+    <div class="modal-info">
+      <div class="modal-title" id="modalTitle"></div>
+      <div id="modalDesc" style="font-size:13px;color:var(--text-dim);margin-top:4px;line-height:1.5"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── CONFIG ────────────────────────────────────────────────────
+var SUPABASE_URL  = window.SUPABASE_URL  || '';
+var SUPABASE_ANON = window.SUPABASE_ANON || '';
+
+// Tenta pegar do mesmo lugar que o site principal usa
+(function() {
+  var scripts = document.querySelectorAll('script[src]');
+  // fallback: lê das meta tags se existirem
+  var metaUrl  = document.querySelector('meta[name="supabase-url"]');
+  var metaAnon = document.querySelector('meta[name="supabase-anon"]');
+  if (metaUrl)  SUPABASE_URL  = metaUrl.getAttribute('content');
+  if (metaAnon) SUPABASE_ANON = metaAnon.getAttribute('content');
+})();
+
+// ── ESTADO ────────────────────────────────────────────────────
+var SESSION_KEY = 'mbr_session';
+var currentUser = null;
+
+// Token de acesso da URL (vindo do webhook após pagamento)
+var urlParams   = new URLSearchParams(window.location.search);
+var accessToken = urlParams.get('token') || '';
+
+// ── INIT ──────────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', function() {
+  // Mostra hint do token na aba de registro
+  if (accessToken) {
+    switchTab('register');
+    var hint = document.getElementById('tokenHint');
+    if (hint) hint.style.display = '';
+  }
+
+  // Verifica sessão salva
+  var saved = localStorage.getItem(SESSION_KEY);
+  if (saved) {
+    try {
+      var s = JSON.parse(saved);
+      // Supabase pode retornar token direto ou aninhado em session
+      var token = s.access_token || (s.session && s.session.access_token);
+      if (token) {
+        if (!s.access_token) s.access_token = token;
+        currentUser = s;
+        showMembers();
+        return;
+      }
+    } catch(e) { console.error('Erro ao restaurar sessão:', e); }
+  }
+
+  showAuth();
+});
+
+// ── AUTH ──────────────────────────────────────────────────────
+function switchTab(tab) {
+  document.getElementById('tabLogin').classList.toggle('active', tab === 'login');
+  document.getElementById('tabRegister').classList.toggle('active', tab === 'register');
+  document.getElementById('formLogin').style.display    = tab === 'login' ? '' : 'none';
+  document.getElementById('formRegister').style.display = tab === 'register' ? '' : 'none';
+  setMsg('', '');
+}
+
+function setMsg(text, type) {
+  var el = document.getElementById('authMsg');
+  el.textContent = text;
+  el.className = 'auth-msg' + (type ? ' ' + type : '');
+}
+
+function setLoading(btnEl, loading) {
+  btnEl.disabled = loading;
+  btnEl.textContent = loading ? 'Aguarde...' : btnEl._orig;
+}
+
+async function doLogin() {
+  var email = document.getElementById('loginEmail').value.trim();
+  var pass  = document.getElementById('loginPassword').value;
+  if (!email || !pass) { setMsg('Preencha todos os campos.', 'error'); return; }
+
+  var btn = document.querySelector('#formLogin .btn-primary');
+  btn._orig = btn.textContent;
+  setLoading(btn, true);
+  setMsg('', '');
+
+  try {
+    var res = await fetch(SUPABASE_URL + '/auth/v1/token?grant_type=password', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': SUPABASE_ANON,
+      },
+      body: JSON.stringify({ email: email, password: pass }),
+    });
+    var data = await res.json();
+    if (!res.ok) throw new Error(data.error_description || data.msg || 'Credenciais inválidas.');
+    currentUser = data;
+    localStorage.setItem(SESSION_KEY, JSON.stringify(data));
+    showMembers();
+  } catch(e) {
+    setMsg(e.message, 'error');
+  } finally {
+    setLoading(btn, false);
+  }
+}
+
+async function doRegister() {
+  var email = document.getElementById('regEmail').value.trim();
+  var pass  = document.getElementById('regPassword').value;
+  var pass2 = document.getElementById('regPassword2').value;
+
+  if (!email || !pass) { setMsg('Preencha todos os campos.', 'error'); return; }
+  if (pass !== pass2)  { setMsg('As senhas não coincidem.', 'error'); return; }
+  if (pass.length < 6) { setMsg('Senha deve ter pelo menos 6 caracteres.', 'error'); return; }
+
+  var btn = document.querySelector('#formRegister .btn-primary');
+  btn._orig = btn.textContent;
+  setLoading(btn, true);
+  setMsg('', '');
+
+  try {
+    // Cadastra no Supabase Auth
+    var res = await fetch(SUPABASE_URL + '/auth/v1/signup', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_ANON },
+      body: JSON.stringify({ email: email, password: pass }),
+    });
+    var data = await res.json();
+    if (!res.ok) throw new Error(data.error_description || data.msg || 'Erro ao criar conta.');
+
+    // Se tem token de acesso, vincula ao usuário
+    if (accessToken && data.user) {
+      await fetch('/api/activate-access', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: accessToken, user_id: data.user.id, email: email }),
+      });
+    }
+
+    // Faz login automático
+    if (data.access_token) {
+      currentUser = data;
+      localStorage.setItem(SESSION_KEY, JSON.stringify(data));
+      showMembers();
+    } else {
+      setMsg('Conta criada! Verifique seu e-mail para confirmar e depois faça login.', 'success');
+      switchTab('login');
+    }
+  } catch(e) {
+    setMsg(e.message, 'error');
+  } finally {
+    setLoading(btn, false);
+  }
+}
+
+function logout() {
+  localStorage.removeItem(SESSION_KEY);
+  currentUser = null;
+  document.getElementById('membersScreen').style.display = 'none';
+  document.getElementById('topbarUser').style.display = 'none';
+  showAuth();
+}
+
+// ── TELAS ──────────────────────────────────────────────────────
+function showAuth() {
+  document.getElementById('authScreen').style.display = 'flex';
+  document.getElementById('membersScreen').style.display = 'none';
+}
+
+function showMembers() {
+  document.getElementById('authScreen').style.display = 'none';
+  var ms = document.getElementById('membersScreen');
+  ms.style.display = 'block';
+
+  // Topbar
+  var email = (currentUser.user && currentUser.user.email) || currentUser.email || '';
+  document.getElementById('topbarEmail').textContent = email;
+  document.getElementById('topbarUser').style.display = 'flex';
+
+  // Garante que o DOM está visível antes de renderizar
+  setTimeout(loadVideos, 50);
+}
+
+// ── VÍDEOS ────────────────────────────────────────────────────
+async function loadVideos() {
+  try {
+    var modelFilter = window.MODEL_ID ? '&model_id=eq.' + encodeURIComponent(window.MODEL_ID) : '';
+    var res = await fetch(SUPABASE_URL + '/rest/v1/medias?type=neq.photo&order=created_at.desc' + modelFilter, {
+      headers: {
+        'apikey': SUPABASE_ANON,
+        'Authorization': 'Bearer ' + currentUser.access_token,
+      }
+    });
+
+    if (res.status === 401) { logout(); return; }
+    var videos = await res.json();
+
+    renderVideos(videos);
+  } catch(e) {
+    document.getElementById('videoGrid').innerHTML = '<div class="empty-state"><p>Erro ao carregar vídeos. Tente novamente.</p></div>';
+  }
+}
+
+function renderVideos(videos) {
+  var grid = document.getElementById('videoGrid');
+  var count = document.getElementById('videoCount');
+
+  count.textContent = videos.length + (videos.length === 1 ? ' vídeo' : ' vídeos');
+
+  if (!videos.length) {
+    grid.innerHTML = '<div class="empty-state"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="m8 21 4-4 4 4M12 17v4"/></svg><p>Nenhum vídeo disponível ainda.</p></div>';
+    grid.className = '';
+    return;
+  }
+
+  window._videos = videos;
+  grid.className = 'video-grid';
+  grid.innerHTML = videos.map(function(v, i) {
+    var isVideo = v.url && (v.url.match(/\.(mp4|webm|mov)/i) || v.type === 'video' || v.type === 'paid');
+    var thumb = v.thumbnail
+      ? '<img src="' + escHtml(v.thumbnail) + '" alt="" loading="lazy">'
+      : '<div class="video-thumb-placeholder"><svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polygon points="5 3 19 12 5 21 5 3"/></svg></div>';
+
+    return '<div class="video-card" onclick="openVideo(window._videos[' + i + '])">'
+      + '<div class="video-thumb">'
+      + thumb
+      + '<div class="play-overlay"><div class="play-btn"><svg width="16" height="16" viewBox="0 0 24 24" fill="white"><polygon points="5 3 19 12 5 21 5 3"/></svg></div></div>'
+      + '<div class="video-type-badge">' + (v.type === 'paid' ? 'Exclusivo' : 'Vídeo') + '</div>'
+      + '</div>'
+      + '<div class="video-info">'
+      + '<div class="video-title">' + escHtml(v.title || 'Sem título') + '</div>'
+      + (v.description ? '<div class="video-desc">' + escHtml(v.description) + '</div>' : '')
+      + '</div>'
+      + '</div>';
+  }).join('');
+}
+
+// ── MODAL ─────────────────────────────────────────────────────
+function openVideo(v) {
+  var wrap  = document.getElementById('modalVideoWrap');
+  var title = document.getElementById('modalTitle');
+
+  title.textContent = v.title || '';
+  var descEl = document.getElementById('modalDesc');
+  if (descEl) descEl.textContent = v.description || '';
+
+  var isVideo = v.url && v.url.match(/\.(mp4|webm|mov)/i);
+  var isYt    = v.url && v.url.match(/youtube\.com|youtu\.be/i);
+
+  if (isYt) {
+    var ytId = v.url.match(/(?:v=|youtu\.be\/)([^&?]+)/);
+    wrap.innerHTML = '<iframe src="https://www.youtube.com/embed/' + (ytId ? ytId[1] : '') + '?autoplay=1" frameborder="0" allow="autoplay; fullscreen" allowfullscreen></iframe>';
+  } else {
+    wrap.innerHTML = '<video src="' + escHtml(v.url) + '" controls autoplay playsinline style="width:100%;height:100%;background:#000"></video>';
+  }
+
+  document.getElementById('videoModal').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeVideo() {
+  document.getElementById('videoModal').classList.remove('open');
+  document.getElementById('modalVideoWrap').innerHTML = '';
+  document.body.style.overflow = '';
+}
+
+document.getElementById('videoModal').addEventListener('click', function(e) {
+  if (e.target === this) closeVideo();
+});
+
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') closeVideo();
+});
+
+function escHtml(s) {
+  return String(s || '').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+</script>
+</body>
+</html>
