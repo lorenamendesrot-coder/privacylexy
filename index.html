@@ -2689,15 +2689,16 @@ var SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS
     if (c.stats_likes)  { setText('statLikes', c.stats_likes); setText('miniStatLikes', c.stats_likes); }
     // ── HELPER: aplica preço com desconto reverso (full + % → calcula promo) ──
     function applyPlanPrice(planCode, priceId, priceOldId, badgeId, priceVal, fullVal, offVal) {
-      var full = fullVal ? parseFloat(String(fullVal).replace(',', '.')) : 0;
-      var pct  = offVal  ? parseFloat(offVal) : 0;
+      var full  = fullVal  ? parseFloat(String(fullVal).replace(',', '.'))  : 0;
+      var pct   = offVal   ? parseFloat(offVal)                             : 0;
       var price;
 
-      // desconto reverso: se tiver full + %, calcula o preço promo
-      if (full > 0 && pct > 0 && pct < 100) {
-        price = full * (1 - pct / 100);
-      } else if (priceVal) {
+      if (priceVal) {
+        // Usa sempre o preço digitado como verdade absoluta
         price = parseFloat(String(priceVal).replace(',', '.'));
+      } else if (full > 0 && pct > 0 && pct < 100) {
+        // Fallback: calcula pelo desconto reverso se não tiver preço direto
+        price = Math.round(full * (1 - pct / 100) * 100) / 100;
       } else {
         return; // sem dados, não exibe nada
       }
@@ -2710,7 +2711,7 @@ var SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS
       var btn = document.querySelector('[data-plan-code="' + planCode + '"]');
       if (btn) btn.dataset.price = p;
 
-      // mostra preço riscado se tiver desconto
+      // mostra preço riscado e badge % se tiver full + off
       if (full > 0 && pct > 0) {
         var fullStr = full.toFixed(2).replace('.', ',');
         var oldEl = document.getElementById(priceOldId);
