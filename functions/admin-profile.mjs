@@ -49,7 +49,7 @@ async function sbUpsert(url, key, table, rowKey, value) {
   return true;
 }
 
-export default async function handler(req) {
+export async function handler(req) {
   try {
     const env        = process.env;
     const SUPABASE_URL = env.SUPABASE_URL;
