@@ -30,6 +30,7 @@ CREATE POLICY "Somente service_role acessa pending_payments" ON public.pending_p
 -- o conteúdo pago só é lido pelo service_role, através do endpoint
 -- /api/member-content (que confere se o usuário realmente pagou).
 DROP POLICY IF EXISTS "Medias são públicas" ON public.medias;
+DROP POLICY IF EXISTS "Mídias gratuitas são públicas" ON public.medias;
 
 CREATE POLICY "Mídias gratuitas são públicas" ON public.medias
   FOR SELECT USING (is_free = true OR auth.role() = 'service_role');
