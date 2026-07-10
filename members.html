@@ -744,34 +744,33 @@ function showMembers() {
 // ── VÍDEOS ────────────────────────────────────────────────────
 async function loadVideos() {
   try {
-    // Busca MODEL_ID salvo no Supabase pelo admin
-    var modelId = null;
-    try {
-      // Pega model_id via worker — ele sabe pelo env var do deploy
-      try {
-        var cfgRes = await fetch('/api/admin-profile');
-        if (cfgRes.ok) {
-          var cfgData = await cfgRes.json();
-          modelId = cfgData._model_id || cfgData.model_id || null;
-        }
-      } catch(e) { /* ignora, carrega sem filtro */ }
-    } catch(e) { /* ignora, carrega sem filtro */ }
-
-    var modelFilter = modelId ? '&model_id=eq.' + encodeURIComponent(modelId) : '';
-    var res = await fetch(SUPABASE_URL + '/rest/v1/medias?type=neq.photo&order=created_at.desc' + modelFilter, {
-      headers: {
-        'apikey': SUPABASE_ANON,
-        'Authorization': 'Bearer ' + currentUser.access_token,
-      }
+    var res = await fetch('/api/member-content', {
+      headers: { 'Authorization': 'Bearer ' + currentUser.access_token }
     });
 
     if (res.status === 401) { logout(); return; }
-    var videos = await res.json();
+    var data = await res.json();
 
+    if (!data.ok) throw new Error(data.error || 'Erro ao carregar conteúdo');
+
+    if (!data.hasAccess) {
+      renderNoAccess();
+      return;
+    }
+
+    var videos = (data.medias || []).filter(function(m) { return m.type !== 'photo'; });
     renderVideos(videos);
   } catch(e) {
     document.getElementById('videoGrid').innerHTML = '<div class="empty-state"><p>Erro ao carregar vídeos. Tente novamente.</p></div>';
   }
+}
+
+function renderNoAccess() {
+  var grid = document.getElementById('videoGrid');
+  var count = document.getElementById('videoCount');
+  if (count) count.textContent = '0 vídeos';
+  grid.className = '';
+  grid.innerHTML = '<div class="empty-state"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="m8 21 4-4 4 4M12 17v4"/></svg><p>Você ainda não tem um pagamento confirmado nesta conta.<br>Assine para desbloquear o conteúdo.</p></div>';
 }
 
 function renderVideos(videos) {

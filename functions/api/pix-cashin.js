@@ -1,5 +1,6 @@
 // functions/api/pix-cashin.js
 import { GATEWAYS } from "../../lib/gateways.js";
+import { createClient } from "../../lib/supabase.js";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -7,7 +8,7 @@ const CORS = {
   "Content-Type": "application/json",
 };
 
-export async function onRequest({ request }) {
+export async function onRequest({ request, env }) {
   if (request.method === "OPTIONS") return new Response(null, { status: 200, headers: CORS });
   if (request.method !== "POST") {
     return new Response(JSON.stringify({ error: "Method Not Allowed" }), { status: 405, headers: CORS });
@@ -18,7 +19,7 @@ export async function onRequest({ request }) {
     return new Response(JSON.stringify({ error: "JSON inválido" }), { status: 400, headers: CORS });
   }
 
-  const { amount, site_url, gateway: gatewayName = "syncpay", ...cfg } = body;
+  const { amount, site_url, gateway: gatewayName = "syncpay", user_id, email, ...cfg } = body;
 
   if (!amount) {
     return new Response(JSON.stringify({ error: "amount obrigatório" }), { status: 422, headers: CORS });
@@ -43,9 +44,22 @@ export async function onRequest({ request }) {
   try {
     const webhookUrl = site_url ? `${site_url}/api/pix-webhook` : null;
     const result = await gateway.cashin(cfg, amount, webhookUrl);
+
+    // Se o lead estiver logado, guarda a ligação user_id <-> cobrança.
+    // Quando o webhook confirmar o pagamento, ele lê essa tabela e já
+    // cria o access_token com o user_id certo — sem precisar de token na URL.
+    if (user_id && result.identifier && env.SUPABASE_URL && env.SUPABASE_SERVICE_KEY) {
+      const supabase = createClient(env.SUPABASE_URL, env.SUPABASE_SERVICE_KEY);
+      const { error: pendingErr } = await supabase
+        .from("pending_payments")
+        .insert({ identifier: String(result.identifier), user_id, email: email || null });
+      if (pendingErr) console.error("[pix-cashin] erro ao gravar pending_payments:", pendingErr);
+    }
+
     return new Response(JSON.stringify({ ok: true, ...result }), { status: 200, headers: CORS });
   } catch (err) {
     console.error(`[pix-cashin:${gatewayName}]`, err);
     return new Response(JSON.stringify({ error: err.message }), { status: 500, headers: CORS });
   }
 }
+

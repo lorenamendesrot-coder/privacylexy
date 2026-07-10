@@ -2607,6 +2607,35 @@ main.wrap{
 
     <div class="pm-body">
 
+      <!-- ── Etapa de login/cadastro (aparece antes do pagamento) ── -->
+      <div id="authGateStep" style="display:none">
+        <h3 class="pm-h3">Crie sua conta para continuar</h3>
+        <p style="font-size:13px;color:var(--text-dim,#999);margin:4px 0 18px;line-height:1.5">
+          Assim você acessa o conteúdo assim que o pagamento for confirmado — e pode voltar aqui depois só fazendo login.
+        </p>
+
+        <div style="display:flex;background:rgba(255,255,255,0.06);border-radius:10px;padding:3px;margin-bottom:16px">
+          <button type="button" id="authTabRegister" onclick="pixAuthSwitchTab('register')" style="flex:1;padding:8px;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;background:#fff;color:#111">Criar conta</button>
+          <button type="button" id="authTabLogin" onclick="pixAuthSwitchTab('login')" style="flex:1;padding:8px;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;background:transparent;color:var(--text-dim,#999)">Já tenho conta</button>
+        </div>
+
+        <div id="authFormRegister">
+          <input type="email" id="pixAuthRegEmail" placeholder="E-mail" autocomplete="email" style="width:100%;box-sizing:border-box;background:#fff;border:1px solid #ddd;border-radius:8px;padding:12px;color:#111;font-size:14px;margin-bottom:10px;outline:none">
+          <input type="password" id="pixAuthRegPass" placeholder="Senha (mín. 6 caracteres)" autocomplete="new-password" style="width:100%;box-sizing:border-box;background:#fff;border:1px solid #ddd;border-radius:8px;padding:12px;color:#111;font-size:14px;margin-bottom:10px;outline:none">
+        </div>
+
+        <div id="authFormLogin" style="display:none">
+          <input type="email" id="pixAuthLoginEmail" placeholder="E-mail" autocomplete="email" style="width:100%;box-sizing:border-box;background:#fff;border:1px solid #ddd;border-radius:8px;padding:12px;color:#111;font-size:14px;margin-bottom:10px;outline:none">
+          <input type="password" id="pixAuthLoginPass" placeholder="Senha" autocomplete="current-password" style="width:100%;box-sizing:border-box;background:#fff;border:1px solid #ddd;border-radius:8px;padding:12px;color:#111;font-size:14px;margin-bottom:10px;outline:none">
+        </div>
+
+        <button id="pixAuthSubmitBtn" onclick="pixAuthSubmit()" type="button" style="display:block;width:100%;padding:13px;background:var(--accent,#e91e8c);color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer">Criar conta e continuar</button>
+        <p id="pixAuthMsg" style="text-align:center;font-size:12px;margin-top:10px;min-height:16px"></p>
+      </div>
+
+      <!-- ── Etapa de pagamento (aparece após login/cadastro) ── -->
+      <div id="paymentStep">
+
       <h3 class="pm-h3" id="payTitle">Benefícios exclusivos</h3>
 
       <ul class="pm-benefits">
@@ -2633,6 +2662,7 @@ main.wrap{
 
       <button id="generatePixBtn" class="pm-generate" type="button">Gerar Pix</button>
 
+      </div>
     </div>
   </div>
 </div>

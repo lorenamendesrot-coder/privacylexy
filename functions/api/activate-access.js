@@ -1,5 +1,7 @@
 // functions/api/activate-access.js
-// Vincula o token de pagamento ao usuário recém-cadastrado
+// Vincula o token de pagamento (recebido por URL) ao usuário recém-cadastrado.
+// Usado no fluxo antigo: pagou como anônimo → recebeu link com ?token=xxx →
+// criou conta depois → aqui a gente casa o token com o user_id.
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -21,30 +23,33 @@ export async function onRequest({ request, env }) {
     return new Response(JSON.stringify({ error: "token e user_id são obrigatórios" }), { status: 422, headers: CORS });
   }
 
-  const SUPABASE_URL          = env.SUPABASE_URL;
-  const SUPABASE_SERVICE_ROLE = env.SUPABASE_SERVICE_ROLE;
+  const SUPABASE_URL   = env.SUPABASE_URL;
+  const SERVICE_KEY    = env.SUPABASE_SERVICE_KEY;
 
-  if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE) {
+  if (!SUPABASE_URL || !SERVICE_KEY) {
     return new Response(JSON.stringify({ error: "Variáveis de ambiente não configuradas" }), { status: 500, headers: CORS });
   }
 
   try {
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/activate_member_access`, {
-      method: "POST",
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/access_tokens?token=eq.${encodeURIComponent(token)}`, {
+      method: "PATCH",
       headers: {
         "Content-Type": "application/json",
-        "apikey": SUPABASE_SERVICE_ROLE,
-        "Authorization": `Bearer ${SUPABASE_SERVICE_ROLE}`,
+        "apikey": SERVICE_KEY,
+        "Authorization": `Bearer ${SERVICE_KEY}`,
+        "Prefer": "return=representation",
       },
-      body: JSON.stringify({ p_user_id: user_id, p_token: token, p_email: email || null }),
+      body: JSON.stringify({ user_id, ...(email ? { payer_email: email } : {}) }),
     });
 
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.message || "Erro ao ativar acesso");
+    const data = await res.json().catch(() => null);
+    if (!res.ok) throw new Error((data && data.message) || "Erro ao vincular acesso");
+    if (!Array.isArray(data) || !data.length) throw new Error("Token de acesso não encontrado");
 
-    return new Response(JSON.stringify(data), { status: 200, headers: CORS });
+    return new Response(JSON.stringify({ ok: true }), { status: 200, headers: CORS });
   } catch (err) {
     console.error("[activate-access]", err);
     return new Response(JSON.stringify({ error: err.message }), { status: 500, headers: CORS });
   }
 }
+
