@@ -385,6 +385,7 @@
               <option value="asaas">Asaas</option>
               <option value="efibank">EfiBank</option>
               <option value="primepag">PrimePag</option>
+              <option value="wiinpay">WiinPay</option>
             </select>
           </div>
           <div class="field full">
@@ -485,6 +486,15 @@
           <div class="field">
             <label>Client Secret</label>
             <input id="pPrimepagClientSecret" type="password" placeholder="Client Secret">
+          </div>
+        </div>
+
+        <!-- Campos: WiinPay -->
+        <div id="gw-wiinpay" class="gw-fields form-row" style="display:none">
+          <div class="field full">
+            <label>API Key</label>
+            <input id="pWiinpayApiKey" type="password" placeholder="Sua API Key WiinPay">
+            <div class="field-hint">Painel WiinPay → Configurações → API Key</div>
           </div>
         </div>
 
@@ -817,6 +827,8 @@ function applyProfile(cfg) {
   // PrimePag
   setVal('pPrimepagClientId',     cfg.primepag_client_id     || '');
   setVal('pPrimepagClientSecret', cfg.primepag_client_secret || '');
+  // WiinPay
+  setVal('pWiinpayApiKey', cfg.wiinpay_api_key || '');
   // Popula cache diretamente da config (independe de display:none nos blocos)
   _gwCache['pSyncpayClientId']     = cfg.syncpay_client_id     || '';
   _gwCache['pSyncpayClientSecret'] = cfg.syncpay_client_secret || '';
@@ -831,6 +843,7 @@ function applyProfile(cfg) {
   _gwCache['pEfibankSandbox']      = cfg.efibank_sandbox       ? '1' : '';
   _gwCache['pPrimepagClientId']     = cfg.primepag_client_id     || '';
   _gwCache['pPrimepagClientSecret'] = cfg.primepag_client_secret || '';
+  _gwCache['pWiinpayApiKey'] = cfg.wiinpay_api_key || '';
   // Agora aplica o gateway selecionado (esconde/mostra bloco correto)
   onGatewayChange();
   // Webhook URL
@@ -938,6 +951,7 @@ async function saveProfile() {
     efibank_sandbox:       getVal('pEfibankSandbox') === '1',
     primepag_client_id:    getVal('pPrimepagClientId'),
     primepag_client_secret:getVal('pPrimepagClientSecret'),
+    wiinpay_api_key:       getVal('pWiinpayApiKey'),
   };
   // Envia tudo junto para o worker — ele separa perfil/gateway e usa env.MODEL_ID
   try {
