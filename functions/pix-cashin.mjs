@@ -79,6 +79,31 @@ const GATEWAYS = {
       return { pix_code: data.qr_code || data.pix_code, identifier: data.transactionId || data.id };
     },
   },
+  wiinpay: {
+    requiredFields: ["wiinpay_api_key"],
+    async cashin(cfg, amount, webhookUrl) {
+      const value = parseFloat((parseFloat(amount) / 100).toFixed(2));
+      const payload = {
+        api_key: cfg.wiinpay_api_key,
+        value,
+        name: "Cliente",
+        email: "cliente@email.com",
+        description: "Acesso ao conteúdo",
+      };
+      if (webhookUrl) payload.webhook_url = webhookUrl;
+      const res = await fetch("https://api-v2.wiinpay.com.br/payment/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Accept": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.message || data.error || `WiinPay HTTP ${res.status}`);
+      return {
+        pix_code: data.pix_code || data.brcode || data.copy_paste || data.qr_code,
+        identifier: data.id || data.paymentId || data.payment_id,
+      };
+    },
+  },
 };
 
 export default async (req, context) => {

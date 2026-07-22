@@ -21,6 +21,7 @@ function detectGateway(body: any, headers: Headers): string {
   if (body.pix) return "efibank";
   if (body.transactionId && body.status === "PAID") return "primepag";
   if (body.data?.id && body.data?.status) return "syncpay";
+  if (body.status === "PAID" && (body.id || body.paymentId) && body.value) return "wiinpay";
   return "generic";
 }
 
@@ -45,6 +46,15 @@ function parsePayment(gateway: string, body: any): any {
     case "mercadopago":
       if (body.action !== "payment.updated") return null;
       return { paymentId: String(body.data?.id), status: "approved" };
+    case "wiinpay":
+      if (body.status !== "PAID") return null;
+      return {
+        paymentId: body.id || body.paymentId || body.payment_id,
+        status: "approved",
+        amount: body.value || body.amount,
+        payerName: body.name || null,
+        payerEmail: body.email || null,
+      };
     default:
       if (body.status === "approved" && body.paymentId) return body;
       return null;
